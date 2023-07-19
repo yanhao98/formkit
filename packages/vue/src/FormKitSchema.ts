@@ -181,6 +181,14 @@ let instanceKey: object
 const instanceScopes = new WeakMap<object, Record<string, any>[]>()
 
 /**
+ * A registry of element refs bound to a unique key (often a FormKitNode). These
+ * refs are created for every meta `section` found in the schema.
+ *
+ * @internal
+ */
+const sectionRefs = new WeakMap<object, Record<string, Ref<unknown>>>()
+
+/**
  * Indicates the a section of the schema is raw.
  */
 const raw = '__raw__'
@@ -433,6 +441,9 @@ function parseSchema(
     let resolve = false
     const node = sugar(_node)
     if (isDOM(node)) {
+      if ('meta' in node) {
+        console.log('found section', node.meta)
+      }
       // This is an actual HTML DOM element
       element = node.$el
       attrs =
@@ -864,6 +875,10 @@ export const FormKitSchema = defineComponent({
       type: String,
       required: false,
     },
+    refsKey: {
+      type: Object,
+      required: false,
+    },
   },
   setup(props, context) {
     const instance = getCurrentInstance()
@@ -895,7 +910,7 @@ export const FormKitSchema = defineComponent({
       )
     }
 
-    // // Watch the data object explicitly
+    // Watch the data object explicitly
     watchEffect(() => {
       data = Object.assign(reactive(props.data ?? {}), {
         slots: context.slots,
@@ -919,6 +934,9 @@ export const FormKitSchema = defineComponent({
       /* eslint-enable @typescript-eslint/no-non-null-assertion */
     }
 
+    if (props.refsKey) {
+      sectionRefs.set(props.refsKey, {})
+    }
     // For browser rendering:
     onUnmounted(cleanUp)
     // For SSR rendering:

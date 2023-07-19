@@ -1,12 +1,28 @@
 import { reactive, nextTick, defineComponent, markRaw, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { FormKitSchemaNode } from '@formkit/core'
+import { createSection } from '@formkit/inputs'
 import { FormKitSchema } from '../src/FormKitSchema'
 import { createNode, resetRegistry } from '@formkit/core'
 import corePlugin from '../src/bindings'
 import { plugin } from '../src/plugin'
 import defaultConfig from '../src/defaultConfig'
 import { beforeEach, describe, expect, it } from 'vitest'
+
+describe.only('section refs', () => {
+  it.only('can render a single section', () => {
+    const section = createSection('foo', () => ({
+      $el: 'h1',
+      children: 'Hello world',
+    }))
+    const h1 = mount(FormKitSchema, {
+      props: {
+        schema: section()({}),
+      },
+    })
+    expect(h1.html()).toBe('<h1>Hello world</h1>')
+  })
+})
 
 describe('parsing dom elements', () => {
   it('can render a single simple dom element', () => {
