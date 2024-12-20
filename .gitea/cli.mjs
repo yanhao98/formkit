@@ -1,5 +1,11 @@
 import { execSync } from 'child_process'
-import { isRunningInVSCode, packTgz, uploadTgz } from './utils.mjs'
+import fs from 'fs'
+import {
+  isRunningInVSCode,
+  packTgz,
+  patchVersion,
+  uploadTgz,
+} from './utils.mjs'
 
 const packageCwd = process.cwd() + '/packages/vue'
 
@@ -12,14 +18,27 @@ function build() {
   execSync(command, { stdio: 'inherit' })
 }
 
-const command = process.argv[2]
+async function generateNewJson(pkgFile = `${packageCwd}/package.json`) {
+  execSync(`git checkout ${pkgFile}`, { stdio: 'inherit' })
+  const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'))
+  return {
+    name: pkg.name,
+    version: patchVersion(pkg.version),
+    type: pkg.type,
+    main: pkg.main,
+    types: pkg.types,
+    exports: pkg.exports,
+    dependencies: pkg.dependencies,
+  }
+}
 
+const command = process.argv[2]
 switch (command) {
   case 'build':
     build()
     break
   case 'pack':
-    packTgz(packageCwd)
+    packTgz(packageCwd, await generateNewJson())
     break
   case 'upload':
     uploadTgz(packageCwd, 'npm-hosted')

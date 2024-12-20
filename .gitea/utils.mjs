@@ -1,34 +1,23 @@
 import { execSync } from 'child_process'
 import fs, { writeFileSync } from 'fs'
 
-// 1.6.9 -> 1.6.10
-function patchVersion(version) {
+// 1.6.9 -> 1.6.10-fix.20210922123456
+export function patchVersion(version) {
+  // -> 1.6.10
   const versionArr = version.split('.')
   const patch = parseInt(versionArr.pop()) + 1
   versionArr.push(patch)
-  return versionArr.join('.')
-}
+  let newVersion = versionArr.join('.')
 
-async function generateNewJson(pkgFile) {
-  execSync(`git checkout ${pkgFile}`, { stdio: 'inherit' })
-  const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'))
-  let version = patchVersion(pkg.version)
-  version += '-fix'
-  version += `.${new Date()
+  // -> 1.6.10-fix
+  newVersion += '-fix'
+
+  // -> 1.6.10-fix.20210922123456
+  newVersion += `.${new Date()
     .toISOString()
     .replace(/[^0-9]/g, '')
     .slice(0, 12)}`
-  return {
-    newJson: {
-      name: pkg.name,
-      version,
-      type: pkg.type,
-      main: pkg.main,
-      types: pkg.types,
-      exports: pkg.exports,
-      dependencies: pkg.dependencies,
-    },
-  }
+  return newVersion
 }
 
 export function isRunningInVSCode() {
@@ -39,11 +28,10 @@ export function isRunningInVSCode() {
   )
 }
 
-export async function packTgz(cwd) {
+export async function packTgz(cwd, pkgJson) {
   const pkgFile = cwd + '/package.json'
   execSync('rm -rf *.tgz', { stdio: 'inherit', cwd })
-  const { newJson } = await generateNewJson(pkgFile)
-  writeFileSync(pkgFile, JSON.stringify(newJson, null, 2))
+  writeFileSync(pkgFile, JSON.stringify(pkgJson, null, 2))
   const tgz = execSync('npm pack', { cwd, encoding: 'utf-8' })
   console.log('tgz :>> ', `${cwd}/${tgz.trim()}`)
   execSync(`git checkout ${pkgFile}`, { stdio: 'inherit' })
